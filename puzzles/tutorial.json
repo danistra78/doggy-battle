@@ -1,0 +1,5 @@
+[
+{"id":"4-001","n":4,"regions":"AAAABBAABCADCCCC","solution":[2,0,3,1],"difficulty":[2,0,16]},
+{"id":"4-002","n":4,"regions":"AABCACCCACCCDDCC","solution":[2,0,3,1],"difficulty":[2,0,16]},
+{"id":"4-003","n":4,"regions":"AAAABAAACCDDCCDD","solution":[2,0,3,1],"difficulty":[2,0,16]}
+]
