@@ -66,8 +66,9 @@ export function advance(save) {
   };
 }
 
-// Zurück zum Anfang des vorherigen Abschnitts, nie unter Abschnitt 1
+// Zurück zum Anfang des vorherigen Abschnitts, nie unter Abschnitt 1; in der Übung (0) wirkungslos
 export function stepBack(save) {
+  if (save.section === 0) return save;
   return {
     ...save,
     section: Math.max(1, save.section - 1),

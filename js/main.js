@@ -16,7 +16,7 @@ const pools = {};
 let save = load(localStorage);
 let game = null, board = null, prevBad = new Set(), solved = false, hintTimer = 0;
 let previewBoard = null;
-let stopTutorial = null, playing = false;
+let stopTutorial = null, playing = false, introSeen = null; // introSeen: Rätsel-ID, dessen Regel-Animation lief
 
 // Übungsführung beenden (Brett wird ersetzt, Startbildschirm, Lösung)
 function endTutorial() {
@@ -26,7 +26,11 @@ function endTutorial() {
 
 function maybeTutorial() {
   endTutorial();
-  if (playing && !solved && CURVE[save.section].tutorial && save.index < 3) stopTutorial = startTutorial(board, game, save.index);
+  if (playing && !solved && CURVE[save.section].tutorial && save.index < 3) {
+    const id = game.puzzle.id;
+    stopTutorial = startTutorial(board, game, save.index, { skipIntro: introSeen === id });
+    introSeen = id;
+  }
 }
 
 async function loadPools() {
@@ -66,6 +70,7 @@ function show(screen) {
 function buildGame() {
   clearTimeout(hintTimer);
   endTutorial();
+  introSeen = null;
   board?.destroy();
   game = restoreGame(save, pools);
   solved = false;
@@ -115,7 +120,7 @@ function showHint() {
     return;
   }
   const { step } = h;
-  board.pulse(step.unit);
+  board.pulse([...new Set([...step.unit, step.cell])]);
   const g = game;
   hintTimer = setTimeout(() => { if (g === game && !solved) game.set(step.cell, step.value); }, HINT_DELAY_MS);
 }
@@ -163,27 +168,48 @@ function openParentMenu() {
       store(localStorage, save);
     },
     repeatTutorial() { apply({ ...save, section: 0, index: 0, current: null }); rebuild(); },
-    stepBack() { apply(stepBack(save)); rebuild(); },
+    stepBack() { if (save.section === 0) return; apply(stepBack(save)); rebuild(); },
     resetAll() { apply(reset()); rebuild(); },
   });
 }
 
+// Fehlerfall: grosser ▶️/🔄-Knopf lädt neu, nie ein leerer Bildschirm
+function showFailure(e) {
+  console.error(e);
+  $('start').hidden = true;
+  $('game').hidden = true;
+  if ($('retry')) return;
+  const b = document.createElement('button');
+  b.id = 'retry';
+  b.className = 'btn big retry';
+  b.setAttribute('aria-label', 'Neu laden');
+  b.textContent = '🔄';
+  b.addEventListener('click', () => location.reload());
+  document.body.append(b);
+}
+
 async function init() {
-  initSound(() => save.settings.sound);
   try {
+    initSound(() => save.settings.sound);
     await loadPools();
+    buildGame();
+    setupHome();
+    $('play').addEventListener('click', startPlaying);
+    $('next').addEventListener('click', () => {
+      try { buildGame(); } catch (e) { showFailure(e); }
+    });
+    $('undo').addEventListener('click', () => { if (!solved) game.undo(); });
+    $('hint').addEventListener('click', showHint);
+    document.addEventListener('dblclick', (e) => e.preventDefault());
+    showStart();
   } catch (e) {
-    console.error(e);
-    return;
+    showFailure(e);
   }
-  buildGame();
-  setupHome();
-  $('play').addEventListener('click', startPlaying);
-  $('next').addEventListener('click', () => { buildGame(); });
-  $('undo').addEventListener('click', () => { if (!solved) game.undo(); });
-  $('hint').addEventListener('click', showHint);
-  document.addEventListener('dblclick', (e) => e.preventDefault());
-  showStart();
+}
+
+// Kein Pinch-Zoom (Safari-Gesten); das Elternmenü-<dialog> bleibt bedienbar (Tippen, keine Gesten nötig)
+for (const type of ['gesturestart', 'gesturechange', 'gestureend']) {
+  document.addEventListener(type, (e) => e.preventDefault());
 }
 
 if ('serviceWorker' in navigator) {

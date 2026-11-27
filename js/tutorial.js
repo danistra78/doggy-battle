@@ -62,7 +62,8 @@ const el = (name, attrs = {}, parent) => {
   return e;
 };
 
-export function startTutorial(board, game, step) {
+// opts.skipIntro: Regel-Animation auslassen, gleich freies Brett mit Hand
+export function startTutorial(board, game, step, opts = {}) {
   const { overlay, cellCenter } = board;
   const { puzzle } = game;
   const n = puzzle.n;
@@ -178,9 +179,12 @@ export function startTutorial(board, game, step) {
     });
   }
 
-  const end = step === 0 ? lineScript('column', lineScript('row', 300))
-    : step === 1 ? regionScript() : touchScript();
-  at(end, free);
+  if (opts.skipIntro) free();
+  else {
+    const end = step === 0 ? lineScript('column', lineScript('row', 300))
+      : step === 1 ? regionScript() : touchScript();
+    at(end, free);
+  }
 
   return function stop() {
     if (stopped) return;

@@ -214,6 +214,11 @@ test('stepBack: aus Abschnitt 3 → Abschnitt 2, Index 0', () => {
   assert.equal(back.current, null);
 });
 
+test('stepBack: in der Übung (Abschnitt 0) unverändert', () => {
+  const save = baseSave({ section: 0, index: 2, current: { puzzle: {}, cells: [] } });
+  assert.deepEqual(stepBack(save), save);
+});
+
 test('reset: liefert frischen Standard-Save', () => {
   assert.deepEqual(reset(), baseSave());
 });

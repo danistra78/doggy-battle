@@ -47,7 +47,7 @@ export class Game {
   beginSwipe() { this.swipe = []; }
 
   swipeOver(i) {
-    if (!this.swipe || this.cells[i] !== EMPTY) return;
+    if (!this.swipe || this.view(i) !== 'empty') return;
     this.swipe.push([i, EMPTY]);
     this.cells[i] = MARK;
     this._changed();

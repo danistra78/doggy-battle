@@ -115,7 +115,40 @@ export function createBoard(svgEl, game, opts = {}) {
   };
   const wiggle = (cells) => play(cells, 'wiggle', 600);
   const pulse = (cells) => play(cells, 'pulse', 1500);
-  let celebrateTimer = 0;
+  let celebrateTimer = 0, confettiLayer = null, confettiTimer = 0;
+  function clearConfetti() {
+    clearTimeout(confettiTimer);
+    confettiLayer?.remove();
+    confettiLayer = null;
+  }
+  // Kurzer Pastell-Konfettiregen (SVG, kein Emoji, keine Pointer-Ereignisse); bei reduzierter Bewegung nur wenige, still einblendend
+  function confetti() {
+    clearConfetti();
+    const calm = typeof matchMedia === 'function' && matchMedia('(prefers-reduced-motion: reduce)').matches;
+    const count = calm ? 12 : 48;
+    const layer = el('g', { class: 'confetti', 'pointer-events': 'none' }, svgEl);
+    confettiLayer = layer;
+    for (let k = 0; k < count; k++) {
+      const x = Math.random() * size, y0 = calm ? Math.random() * size * 0.8 : -40 - Math.random() * size * 0.25;
+      const r = 8 + Math.random() * 8;
+      const common = { fill: PALETTE[k % PALETTE.length], stroke: LINE, 'stroke-opacity': 0.45, 'stroke-width': 2 };
+      const kind = k % 3;
+      const shape = kind === 0 ? el('circle', { ...common, cx: 0, cy: 0, r: r * 0.7 }, layer)
+        : kind === 1 ? el('rect', { ...common, x: -r, y: -r * 0.5, width: r * 2, height: r, rx: 3 }, layer)
+        : el('polygon', { ...common, points: `0,${-r} ${r * 0.9},${r * 0.7} ${-r * 0.9},${r * 0.7}`, 'stroke-linejoin': 'round' }, layer);
+      if (typeof shape.animate !== 'function') continue;
+      const drift = (Math.random() - 0.5) * 160, spin = (Math.random() - 0.5) * 720;
+      const dur = calm ? 1800 : 1800 + Math.random() * 1400;
+      const frames = calm
+        ? [{ opacity: 0, transform: `translate(${x}px, ${y0}px)` }, { opacity: 1, offset: 0.3, transform: `translate(${x}px, ${y0}px)` }, { opacity: 0, transform: `translate(${x}px, ${y0}px)` }]
+        : [{ opacity: 1, transform: `translate(${x}px, ${y0}px) rotate(0deg)` },
+          { opacity: 1, offset: 0.8, transform: `translate(${x + drift * 0.8}px, ${y0 + (size + 80) * 0.8}px) rotate(${spin * 0.8}deg)` },
+          { opacity: 0, transform: `translate(${x + drift}px, ${y0 + size + 80}px) rotate(${spin}deg)` }];
+      shape.style.opacity = '0';
+      shape.animate(frames, { duration: dur, delay: calm ? 0 : Math.random() * 500, easing: 'ease-in', fill: 'both' });
+    }
+    confettiTimer = setTimeout(clearConfetti, 4200);
+  }
   function celebrate() {
     let k = 0;
     groups.forEach((g) => { if (g.classList.contains('dog')) g.style.animationDelay = `${(k++) * 120}ms`; });
@@ -125,6 +158,7 @@ export function createBoard(svgEl, game, opts = {}) {
       svgEl.classList.remove('celebrate');
       groups.forEach((g) => { g.style.animationDelay = ''; });
     }, 3000);
+    confetti();
   }
 
   // Eingabe
@@ -136,9 +170,27 @@ export function createBoard(svgEl, game, opts = {}) {
   const boardSize = () => svgEl.getBoundingClientRect().width;
   const reset = () => { pid = null; points = []; swiping = false; done = 0; };
 
+  // Geste beenden; fehlendes pointerup/-cancel darf das Brett nie sperren
+  const finish = (cancelled) => {
+    if (swiping) game.endSwipe();
+    else if (!cancelled && points.length) {
+      const g = classifyGesture(points, n, boardSize());
+      if (g.kind === 'swipe') {
+        // erst beim Loslassen als Wisch erkannt: wie beim Bewegen anwenden
+        game.beginSwipe();
+        for (const c of g.cells) game.swipeOver(c);
+        game.endSwipe();
+      } else if (g.cell >= 0) game.tap(g.cell);
+    }
+    reset();
+  };
+
   if (interactive) {
     svgEl.addEventListener('pointerdown', (e) => {
-      if (pid !== null) return;
+      if (pid !== null) {
+        if (!e.isPrimary) return;
+        finish(true); // verwaiste Geste (verpasstes pointerup) abbrechen
+      }
       e.preventDefault();
       pid = e.pointerId;
       points = [local(e)];
@@ -155,18 +207,14 @@ export function createBoard(svgEl, game, opts = {}) {
     svgEl.addEventListener('pointerup', (e) => {
       if (e.pointerId !== pid) return;
       points.push(local(e));
-      if (swiping) game.endSwipe();
-      else {
-        const g = classifyGesture(points, n, boardSize());
-        if (g.kind === 'tap' && g.cell >= 0) game.tap(g.cell);
-      }
-      reset();
+      finish(false);
     }, { signal });
-    svgEl.addEventListener('pointercancel', (e) => {
-      if (e.pointerId !== pid) return;
-      if (swiping) game.endSwipe();
-      reset();
-    }, { signal });
+    for (const type of ['pointercancel', 'lostpointercapture']) {
+      svgEl.addEventListener(type, (e) => {
+        if (e.pointerId !== pid) return;
+        finish(true);
+      }, { signal });
+    }
 
     svgEl.addEventListener('contextmenu', (e) => e.preventDefault(), { signal });
   }
@@ -175,6 +223,7 @@ export function createBoard(svgEl, game, opts = {}) {
     destroyed = true;
     ac.abort();
     clearTimeout(celebrateTimer);
+    clearConfetti();
     svgEl.classList.remove('celebrate', 'board');
     svgEl.replaceChildren();
     svgEl.removeAttribute('viewBox');

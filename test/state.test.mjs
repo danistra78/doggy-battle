@@ -92,3 +92,18 @@ test('onChange, toJSON, solved, conflicts', () => {
   const g2 = new Game(FIX5, Uint8Array.from(j.cells));
   assert.equal(g2.cells[FIX5_CELLS[0]], DOG);
 });
+
+test('Wischen: Auto-Pfoten werden nicht zu Hand-Pfoten', () => {
+  const g = new Game(FIX5, undefined, true);
+  g.set(at(2, 2), DOG);
+  const auto = at(2, 3), far = at(0, 0);
+  assert.equal(g.view(auto), 'auto');
+  assert.equal(g.view(far), 'empty');
+  g.beginSwipe();
+  g.swipeOver(auto); g.swipeOver(far);
+  g.endSwipe();
+  assert.equal(g.cells[auto], EMPTY);
+  assert.equal(g.cells[far], MARK);
+  g.set(at(2, 2), EMPTY);
+  assert.equal(g.view(auto), 'empty');
+});
