@@ -6,7 +6,8 @@ import { availableParallelism } from 'node:os';
 import { writeFileSync, mkdirSync } from 'node:fs';
 import { rng, generate, canonical } from '../js/generator.js';
 
-const SIZES = [[4, 3, 'tutorial.json'], [5, 100], [6, 100], [7, 100], [8, 100], [9, 100], [10, 300]];
+// [n, Anzahl, Datei, höchste erlaubte Solver-Stufe]
+const SIZES = [[4, 3, 'tutorial.json', 2], [5, 100], [6, 100], [7, 100], [8, 100], [9, 100], [10, 300]];
 const MAX_JOBS = 2_000_000;
 
 // Seed für Start k bei Grösse n
@@ -31,7 +32,7 @@ if (!isMainThread) {
     () => new Worker(new URL(import.meta.url)));
   const cmp = (a, b) => { for (let i = 0; i < a.length; i++) if (a[i] !== b[i]) return a[i] - b[i]; return 0; };
 
-  const runSize = (n, count) => new Promise((resolve, reject) => {
+  const runSize = (n, count, maxLevel) => new Promise((resolve, reject) => {
     const results = new Map();   // k -> Puzzle|null
     const canon = new Set();
     const chosen = [];
@@ -51,6 +52,7 @@ if (!isMainThread) {
           const q = results.get(done); results.delete(done); done++;
           if (!q) continue;
           okStarts++;
+          if (q.difficulty[0] > maxLevel) continue;
           const c = canonical(q);
           if (canon.has(c)) continue;
           canon.add(c); chosen.push(q);
@@ -64,16 +66,16 @@ if (!isMainThread) {
     for (const w of workers) feed(w);
   });
 
-  for (const [n, count, file = `${n}.json`] of SIZES) {
+  for (const [n, count, file = `${n}.json`, maxLevel = 5] of SIZES) {
     const t0 = performance.now();
-    const { chosen, starts, okStarts } = await runSize(n, count);
+    const { chosen, starts, okStarts } = await runSize(n, count, maxLevel);
     chosen.sort((a, b) => cmp(a.difficulty, b.difficulty)); // stabil: Reihenfolge der Starts
     const out = chosen.map((p, i) => ({
       id: `${n}-${String(i + 1).padStart(3, '0')}`, n, regions: p.regions, solution: p.solution, difficulty: p.difficulty,
     }));
     writeFileSync(new URL(file, outDir), '[\n' + out.map(p => JSON.stringify(p)).join(',\n') + '\n]\n');
     const s = ((performance.now() - t0) / 1000).toFixed(1);
-    console.log(`${n}×${n}: ${count} Rätsel in ${s} s (${starts} Starts, ${okStarts} erfolgreich, ${okStarts - count} Dubletten) -> ${file}`);
+    console.log(`${n}×${n}: ${count} Rätsel in ${s} s (${starts} Starts, ${okStarts} erfolgreich, ${okStarts - count} verworfen: Dubletten/zu schwer) -> ${file}`);
   }
   for (const w of workers) await w.terminate();
 }

@@ -36,3 +36,8 @@ for (const [file, [n, count]] of Object.entries(files)) {
     assert.equal(canon.size, count, 'keine Dubletten');
   });
 }
+
+test('puzzles/tutorial.json: nur Stufen 1–2 (Übung)', () => {
+  const list = JSON.parse(readFileSync(new URL('tutorial.json', dir), 'utf8'));
+  for (const p of list) assert.ok(p.difficulty[0] <= 2, `${p.id}: Stufe ${p.difficulty[0]}`);
+});
