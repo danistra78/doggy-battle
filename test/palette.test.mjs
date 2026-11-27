@@ -1,7 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
-import { PALETTE, PATTERNS, simulate, deltaE, assignColors } from '../js/palette.js';
+import { PALETTE, PATTERNS, simulate, deltaE, assignColors, simDistance } from '../js/palette.js';
 import { regionMap } from '../js/rules.js';
 
 const TYPES = ['deutan', 'protan'];
@@ -45,26 +45,39 @@ test('Kontrast zu Symbolgrau #4a4a4a >= 3:1', () => {
   for (const c of PALETTE) assert.ok(contrast(c, '#4a4a4a') >= 3, `${c}: ${contrast(c, '#4a4a4a').toFixed(2)}`);
 });
 
-test('assignColors: Nachbarbereiche unter beiden Simulationen ΔE >= 20, deterministisch', () => {
-  const all = JSON.parse(readFileSync(new URL('../puzzles/10.json', import.meta.url)));
-  for (let k = 0; k < 20; k++) {
-    const p = all[k * Math.floor(all.length / 20)];
-    const cols = assignColors(p);
-    assert.deepEqual(assignColors(p), cols);
-    const m = regionMap(p);
-    assert.equal(cols.length, p.n);
-    const pairs = new Set();
-    for (let r = 0; r < p.n; r++) for (let c = 0; c < p.n; c++) {
-      const a = m[r * p.n + c];
-      if (c + 1 < p.n) pairs.add(`${a},${m[r * p.n + c + 1]}`);
-      if (r + 1 < p.n) pairs.add(`${a},${m[(r + 1) * p.n + c]}`);
-    }
-    for (const key of pairs) {
-      const [a, b] = key.split(',').map(Number);
-      if (a === b) continue;
-      for (const t of TYPES) {
-        const d = deltaE(simulate(PALETTE[cols[a]], t), simulate(PALETTE[cols[b]], t));
-        assert.ok(d >= 20, `${p.id} ${a}-${b} ${t}: ${d.toFixed(1)}`);
+const CREAM = '#fdf8ee';
+const chroma = (hex) => {
+  const [r, g, b] = sim(hex, 'normal').map(lin);
+  const x = (0.4124564 * r + 0.3575761 * g + 0.1804375 * b) / 0.95047;
+  const y = 0.2126729 * r + 0.7151522 * g + 0.072175 * b;
+  const z = (0.0193339 * r + 0.119192 * g + 0.9503041 * b) / 1.08883;
+  const f = (v) => (v > 216 / 24389 ? Math.cbrt(v) : (24389 / 27 * v + 16) / 116);
+  return Math.hypot(500 * (f(x) - f(y)), 200 * (f(y) - f(z)));
+};
+
+test('weiche Pastelle: Chroma >= 15 und ΔE zu Creme >= 15 (kein Grau, kein Fast-Weiss)', () => {
+  for (const c of PALETTE) {
+    assert.ok(chroma(c) >= 15, `${c} Chroma ${chroma(c).toFixed(1)}`);
+    assert.ok(deltaE(c, CREAM) >= 15, `${c} ΔE Creme ${deltaE(c, CREAM).toFixed(1)}`);
+  }
+});
+
+const load = (f) => JSON.parse(readFileSync(new URL(`../puzzles/${f}.json`, import.meta.url)));
+
+test('assignColors: eindeutige Farben, Nachbar-ΔE >= 20 (deutan/protan), deterministisch, alle Rätsel', () => {
+  for (const f of ['tutorial', 5, 6, 7, 8, 9, 10]) {
+    for (const p of load(f)) {
+      const cols = assignColors(p);
+      assert.deepEqual(assignColors(p), cols);
+      assert.equal(cols.length, p.n);
+      assert.equal(new Set(cols).size, p.n, `${p.id}: Farben nicht eindeutig`);
+      const m = regionMap(p);
+      for (let r = 0; r < p.n; r++) for (let c = 0; c < p.n; c++) {
+        const a = m[r * p.n + c];
+        for (const b of [c + 1 < p.n ? m[r * p.n + c + 1] : a, r + 1 < p.n ? m[(r + 1) * p.n + c] : a]) {
+          if (a === b) continue;
+          assert.ok(simDistance(PALETTE[cols[a]], PALETTE[cols[b]]) >= 20, `${p.id} ${a}-${b}`);
+        }
       }
     }
   }

@@ -1,7 +1,9 @@
 // Rot-Grün-taugliche Pastellpalette: Farbe + Muster je Bereich
 import { regionMap } from './rules.js';
 
-export const PALETTE = ['#eeffe6', '#9c96ac', '#fffe96', '#d7d9db', '#d8ffff', '#f1dafe', '#9e96c6', '#e8e9a9', '#dba696', '#9d97fc'];
+// Per Zufallssuche gewählt: weiche Pastelle (L* 72-94, Chroma 17-42), Paar-ΔE >= 10 normal/deutan/protan,
+// Kontrast >= 3:1 zu #4a4a4a, jeder Bereich eindeutig einfärbbar mit Nachbar-ΔE >= 20 (alle Rätsel).
+export const PALETTE = ['#d3a88c', '#a5fac3', '#93fff9', '#cadafe', '#c2f4dc', '#e0a9a7', '#eaed9c', '#e1b873', '#81b3f9', '#ee9bc5'];
 export const PATTERNS = ['dots', 'stripes', 'checks', 'waves', 'cross', 'diag', 'rings', 'zigzag', 'grid', 'none'];
 
 const MATRIX = {
@@ -57,29 +59,44 @@ function adjacency(puzzle) {
   return adj;
 }
 
-// Pair-Abstand: kleinstes ΔE unter deutan und protan
+// Paar-Abstand: kleinstes ΔE unter deutan und protan
 export function simDistance(a, b) {
   return Math.min(deltaE(simulate(a, 'deutan'), simulate(b, 'deutan')), deltaE(simulate(a, 'protan'), simulate(b, 'protan')));
 }
 
-// Gierige Graphfärbung: Bereiche nach Nachbarzahl absteigend (Index als Tie-Break);
-// je Bereich die Farbe, deren kleinster simulierter Abstand zu bereits gefärbten Nachbarn
-// maximal ist, unbenutzte Farben bevorzugt. Deterministisch.
+// Paarweiser simulierter Abstand der Palettenfarben (zwischengespeichert)
+let distKey = '', DIST = [];
+function distances() {
+  const key = PALETTE.join();
+  if (key !== distKey) { DIST = PALETTE.map((a) => PALETTE.map((b) => simDistance(a, b))); distKey = key; }
+  return DIST;
+}
+
+// Eindeutige Farben: jeder Bereich bekommt einen eigenen Palettenindex (n <= 10).
+// Deterministisches Backtracking (Bereiche nach Nachbarzahl absteigend, Farben nach Index);
+// die Schwelle für das minimale Nachbar-ΔE sinkt von 40 in Schritten von 5 bis 0,
+// die erste lösbare Schwelle gewinnt.
 export function assignColors(puzzle) {
-  const adj = adjacency(puzzle);
-  const order = adj.map((_, i) => i).sort((a, b) => adj[b].size - adj[a].size || a - b);
-  const out = new Array(adj.length).fill(-1);
-  const used = new Array(PALETTE.length).fill(0);
-  for (const reg of order) {
-    let best = -1, bestScore = -Infinity;
-    for (let c = 0; c < PALETTE.length; c++) {
-      let score = Infinity;
-      for (const nb of adj[reg]) if (out[nb] >= 0) score = Math.min(score, c === out[nb] ? 0 : simDistance(PALETTE[c], PALETTE[out[nb]]));
-      score = score * 1000 - used[c];
-      if (score > bestScore) { bestScore = score; best = c; }
-    }
-    out[reg] = best;
-    used[best]++;
+  const DIST = distances();
+  const adj = adjacency(puzzle).map((s) => [...s]);
+  const k = adj.length;
+  if (k > PALETTE.length) throw new Error('Mehr Bereiche als Farben');
+  const order = adj.map((_, i) => i).sort((a, b) => adj[b].length - adj[a].length || a - b);
+  for (let min = 40; min >= 0; min -= 5) {
+    const out = new Array(k).fill(-1);
+    const used = new Array(PALETTE.length).fill(false);
+    const go = (pos) => {
+      if (pos === k) return true;
+      const reg = order[pos];
+      for (let c = 0; c < PALETTE.length; c++) {
+        if (used[c] || adj[reg].some((nb) => out[nb] >= 0 && DIST[c][out[nb]] < min)) continue;
+        out[reg] = c; used[c] = true;
+        if (go(pos + 1)) return true;
+        out[reg] = -1; used[c] = false;
+      }
+      return false;
+    };
+    if (go(0)) return out;
   }
-  return out;
+  throw new Error('Keine Farbzuordnung gefunden');
 }
