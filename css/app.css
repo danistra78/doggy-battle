@@ -53,11 +53,11 @@ body { font-family: system-ui, -apple-system, "Segoe UI", sans-serif; }
   height: 100vh; height: 100dvh; display: flex; flex-direction: column; position: relative;
   padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
 }
-#start { align-items: center; justify-content: space-evenly; }
+#start { align-items: center; justify-content: space-evenly; min-height: 0; }
 .logo { font-size: 72px; line-height: 1; font-family: "Apple Color Emoji", "Noto Color Emoji", sans-serif; }
 .btn { font-family: "Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji", sans-serif; }
 .btn.big { width: 140px; height: 140px; font-size: 72px; box-shadow: 0 6px 0 rgba(74, 74, 74, 0.25); }
-.preview { display: block; width: min(60vw, 40vh); height: min(60vw, 40vh); overflow: visible; pointer-events: none; }
+#start svg.board.preview { --side: min(40vw, 30vh); width: var(--side); height: var(--side); margin: 0; pointer-events: none; }
 .actions { display: flex; gap: 12px; }
 .dots { display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; max-width: 50%; }
 .dot { width: 18px; height: 18px; border-radius: 50%; border: 3px solid var(--ink); background: transparent; }
