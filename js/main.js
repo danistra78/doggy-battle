@@ -186,4 +186,8 @@ async function init() {
   showStart();
 }
 
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('./sw.js', { updateViaCache: 'none' }).catch((e) => console.warn('Service Worker:', e));
+}
+
 init();
