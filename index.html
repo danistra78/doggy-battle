@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="theme-color" content="#fbf7ef">
+<link rel="icon" href="data:,">
+<title>Doggy Battle</title>
+<link rel="stylesheet" href="css/app.css">
+</head>
+<body>
+<main id="start" class="screen" hidden>
+  <div class="logo" aria-hidden="true">🏠</div>
+  <svg id="preview" class="preview"></svg>
+  <button id="play" class="btn big" aria-label="Spielen">▶️</button>
+</main>
+<main id="game" class="screen" hidden>
+  <div class="topbar">
+    <button id="home" class="btn" aria-label="Start">🏠</button>
+    <div id="dots" class="dots" aria-hidden="true"></div>
+    <div class="actions">
+      <button id="undo" class="btn" aria-label="Rückgängig">↩️</button>
+      <button id="hint" class="btn" aria-label="Hinweis">💡</button>
+    </div>
+  </div>
+  <div class="board-wrap"><svg id="board"></svg></div>
+  <button id="next" class="btn big next" aria-label="Weiter" hidden>▶️</button>
+</main>
+<script type="module" src="js/main.js"></script>
+</body>
+</html>
