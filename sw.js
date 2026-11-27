@@ -1,4 +1,4 @@
-const CACHE = 'doggy-v1';
+const CACHE = 'doggy-v2';
 const FILES = [
   './',
   './index.html',
@@ -32,7 +32,7 @@ const FILES = [
 
 self.addEventListener('install', (e) => {
   self.skipWaiting();
-  e.waitUntil(caches.open(CACHE).then((c) => c.addAll(FILES)));
+  e.waitUntil(caches.open(CACHE).then((c) => c.addAll(FILES.map((f) => new Request(f, { cache: 'reload' })))));
 });
 
 self.addEventListener('activate', (e) => {
