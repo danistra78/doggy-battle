@@ -1,0 +1,46 @@
+:root { --bg: #fbf7ef; --ink: #4a4a4a; --bar: 88px; }
+* { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+html, body {
+  margin: 0; height: 100%; overflow: hidden; background: var(--bg); color: var(--ink);
+  -webkit-user-select: none; user-select: none; -webkit-touch-callout: none;
+  overscroll-behavior: none;
+}
+.topbar {
+  height: var(--bar); display: flex; align-items: center; justify-content: space-between;
+  padding: 0 16px; gap: 12px;
+}
+.btn {
+  width: 64px; height: 64px; min-width: 56px; min-height: 56px; border-radius: 50%;
+  border: 3px solid var(--ink); background: #fff; color: var(--ink); font-size: 30px; line-height: 1;
+  display: inline-flex; align-items: center; justify-content: center; padding: 0; cursor: pointer;
+  touch-action: manipulation;
+}
+.btn:active { transform: scale(0.94); }
+.board-wrap { display: flex; justify-content: center; }
+svg.board {
+  display: block; --side: min(calc(100vw - 8px), calc(100vh - var(--bar) - 8px));
+  width: var(--side); height: var(--side); margin: 4px; overflow: visible;
+  touch-action: none; -webkit-user-select: none; user-select: none; -webkit-touch-callout: none;
+}
+svg.board text { font-family: "Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji", sans-serif; dominant-baseline: auto; }
+
+/* Animationen: kurz und sanft */
+svg.board .cell { transform-box: view-box; }
+svg.board .cell.wiggle { animation: wiggle 0.55s ease-in-out; }
+svg.board .cell.pulse .ring { animation: pulse 0.75s ease-in-out 2; }
+svg.board.celebrate .cell.dog { animation: celebrate 0.9s ease-in-out 3; }
+@keyframes wiggle {
+  0%, 100% { transform: translateX(0); }
+  20% { transform: translateX(-7px); }
+  40% { transform: translateX(7px); }
+  60% { transform: translateX(-5px); }
+  80% { transform: translateX(4px); }
+}
+@keyframes pulse { 0%, 100% { opacity: 0; } 50% { opacity: 0.9; } }
+@keyframes celebrate {
+  0%, 100% { transform: translateY(0) scale(1); }
+  40% { transform: translateY(-14px) scale(1.12); }
+}
+@media (prefers-reduced-motion: reduce) {
+  svg.board .cell.wiggle, svg.board .cell.pulse .ring, svg.board.celebrate .cell.dog { animation-duration: 0.01s; }
+}

@@ -1,0 +1,28 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<title>Gitter-Prüfseite</title>
+<link rel="stylesheet" href="../css/app.css">
+</head>
+<body>
+<div class="topbar"></div>
+<div class="board-wrap"><svg id="board"></svg></div>
+<script type="module">
+import { Game } from '../js/state.js';
+import { createBoard } from '../js/board.js';
+const puzzle = {"id": "8-001", "n": 8, "regions": "AAAAABBBAAAABBBBCDDABBBBDDEABBBBDDDDDBFGDDDDDHGGDDDDDHHGDDDDDHHH", "solution": [1, 4, 0, 2, 6, 3, 7, 5], "difficulty": [2, 0, 64]};
+const game = new Game(puzzle);
+const board = createBoard(document.getElementById('board'), game);
+window.game = game; window.board = board;
+// ?play=1: ein paar Doggys, Markierungen und ein Konflikt
+if (new URLSearchParams(location.search).has('play')) {
+  [[0, 1], [1, 4], [2, 0], [3, 2]].forEach(([r, c]) => game.set(r * 8 + c, 2));
+  [[5, 5], [7, 7], [6, 3]].forEach(([r, c]) => game.set(r * 8 + c, 1));
+  game.set(6 * 8 + 0, 2); // gleiche Spalte wie (2,0) -> Konflikt
+  board.wiggle(game.conflicts() ? [...game.conflicts()] : []);
+}
+</script>
+</body>
+</html>
