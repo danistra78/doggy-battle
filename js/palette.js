@@ -1,9 +1,9 @@
 // Rot-Grün-taugliche Pastellpalette: Farbe + Muster je Bereich
 import { regionMap } from './rules.js';
 
-// Per Zufallssuche gewählt: weiche Pastelle (L* 72-94, Chroma 17-42), Paar-ΔE >= 10 normal/deutan/protan,
-// Kontrast >= 3:1 zu #4a4a4a, jeder Bereich eindeutig einfärbbar mit Nachbar-ΔE >= 20 (alle Rätsel).
-export const PALETTE = ['#d3a88c', '#a5fac3', '#93fff9', '#cadafe', '#c2f4dc', '#e0a9a7', '#eaed9c', '#e1b873', '#81b3f9', '#ee9bc5'];
+// Per Zufallssuche gewählt: weiche Pastelle (L* 72-94, Chroma 24-38), Farbtöne rund ums Farbrad (max. 2 pro 40°-Fenster),
+// Paar-ΔE >= 10 normal/deutan/protan, Kontrast >= 3:1 zu #4a4a4a, Nachbar-ΔE >= 20 bei eindeutiger Einfärbung aller Rätsel.
+export const PALETTE = ['#e5b079', '#80b4f5', '#c5facc', '#e6accc', '#87e8fa', '#e5a1ac', '#fdeeae', '#a1ffe2', '#95ffff', '#dca794'];
 export const PATTERNS = ['dots', 'stripes', 'checks', 'waves', 'cross', 'diag', 'rings', 'zigzag', 'grid', 'none'];
 
 const MATRIX = {

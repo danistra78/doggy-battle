@@ -46,19 +46,29 @@ test('Kontrast zu Symbolgrau #4a4a4a >= 3:1', () => {
 });
 
 const CREAM = '#fdf8ee';
-const chroma = (hex) => {
+const labOf = (hex) => {
   const [r, g, b] = sim(hex, 'normal').map(lin);
   const x = (0.4124564 * r + 0.3575761 * g + 0.1804375 * b) / 0.95047;
   const y = 0.2126729 * r + 0.7151522 * g + 0.072175 * b;
   const z = (0.0193339 * r + 0.119192 * g + 0.9503041 * b) / 1.08883;
   const f = (v) => (v > 216 / 24389 ? Math.cbrt(v) : (24389 / 27 * v + 16) / 116);
-  return Math.hypot(500 * (f(x) - f(y)), 200 * (f(y) - f(z)));
+  return [116 * f(y) - 16, 500 * (f(x) - f(y)), 200 * (f(y) - f(z))];
 };
+const chroma = (hex) => Math.hypot(labOf(hex)[1], labOf(hex)[2]);
+const hue = (hex) => (Math.atan2(labOf(hex)[2], labOf(hex)[1]) * 180 / Math.PI + 360) % 360;
 
 test('weiche Pastelle: Chroma >= 15 und ΔE zu Creme >= 15 (kein Grau, kein Fast-Weiss)', () => {
   for (const c of PALETTE) {
     assert.ok(chroma(c) >= 15, `${c} Chroma ${chroma(c).toFixed(1)}`);
     assert.ok(deltaE(c, CREAM) >= 15, `${c} ΔE Creme ${deltaE(c, CREAM).toFixed(1)}`);
+  }
+});
+
+test('Farbtöne: höchstens 2 Palettenfarben pro 40°-Fenster des CIELab-Farbtonwinkels', () => {
+  const hs = PALETTE.map(hue);
+  for (const start of hs) {
+    const n = hs.filter((h) => (h - start + 360) % 360 < 40).length;
+    assert.ok(n <= 2, `${n} Farben ab ${start.toFixed(0)} Grad`);
   }
 });
 
