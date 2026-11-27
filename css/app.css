@@ -41,6 +41,17 @@ svg.board.celebrate .cell.dog { animation: celebrate 0.9s ease-in-out 3; }
   0%, 100% { transform: translateY(0) scale(1); }
   40% { transform: translateY(-14px) scale(1.12); }
 }
+/* Übung: Overlay (Geister, Hand); Tipps gehen durch, ausser auf den Überspring-Fänger */
+svg.board .tut-ghost text { filter: grayscale(0.3); }
+svg.board .tut-pop { animation: tut-pop 0.35s ease-out; }
+svg.board .tut-hand { transition: transform 0.45s ease-in-out; }
+svg.board .tut-hand-in { animation: tut-bob 1.1s ease-in-out infinite; }
+@keyframes tut-pop { from { opacity: 0; } to { opacity: 1; } }
+@keyframes tut-bob { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-10px); } }
+@media (prefers-reduced-motion: reduce) {
+  svg.board .tut-pop, svg.board .tut-hand-in { animation-duration: 0.01s; animation-iteration-count: 1; }
+  svg.board .tut-hand { transition-duration: 0.01s; }
+}
 @media (prefers-reduced-motion: reduce) {
   svg.board .cell.wiggle, svg.board .cell.pulse .ring, svg.board.celebrate .cell.dog { animation-duration: 0.01s; }
 }

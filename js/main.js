@@ -6,6 +6,7 @@ import { CURVE, advance, stepBack, load, store, reset } from './progress.js';
 import { restoreGame } from './restore.js';
 import { initSound, bark } from './sound.js';
 import { openMenu } from './menu.js';
+import { startTutorial } from './tutorial.js';
 
 const $ = (id) => document.getElementById(id);
 const LONG_PRESS_MS = 3000;
@@ -15,6 +16,18 @@ const pools = {};
 let save = load(localStorage);
 let game = null, board = null, prevBad = new Set(), solved = false, hintTimer = 0;
 let previewBoard = null;
+let stopTutorial = null, playing = false;
+
+// Übungsführung beenden (Brett wird ersetzt, Startbildschirm, Lösung)
+function endTutorial() {
+  stopTutorial?.();
+  stopTutorial = null;
+}
+
+function maybeTutorial() {
+  endTutorial();
+  if (playing && !solved && CURVE[save.section].tutorial && save.index < 3) stopTutorial = startTutorial(board, game, save.index);
+}
 
 async function loadPools() {
   const files = { 4: 'puzzles/tutorial.json', 5: 'puzzles/5.json', 6: 'puzzles/6.json', 7: 'puzzles/7.json', 8: 'puzzles/8.json', 9: 'puzzles/9.json', 10: 'puzzles/10.json' };
@@ -52,6 +65,7 @@ function show(screen) {
 // Neues Game samt Brett für den aktuellen Save aufbauen (altes Brett zuerst abbauen)
 function buildGame() {
   clearTimeout(hintTimer);
+  endTutorial();
   board?.destroy();
   game = restoreGame(save, pools);
   solved = false;
@@ -62,6 +76,7 @@ function buildGame() {
   game.onChange(onChange);
   renderDots();
   persist();
+  maybeTutorial();
 }
 
 function onChange() {
@@ -79,6 +94,7 @@ function onChange() {
 
 function onSolved() {
   solved = true;
+  endTutorial();
   clearTimeout(hintTimer);
   save = advance(save);
   store(localStorage, save);
@@ -106,6 +122,8 @@ function showHint() {
 
 function showStart() {
   clearTimeout(hintTimer);
+  playing = false;
+  endTutorial();
   if (solved) buildGame();
   previewBoard?.destroy();
   previewBoard = createBoard($('preview'), new Game(game.puzzle, Uint8Array.from(game.cells), game.autoMark), { interactive: false });
@@ -113,7 +131,9 @@ function showStart() {
 }
 
 function startPlaying() {
+  playing = true;
   show('game');
+  if (!stopTutorial) maybeTutorial();
 }
 
 // Kurzer Druck auf 🏠 = Startbildschirm, 3 s = Elternmenü
