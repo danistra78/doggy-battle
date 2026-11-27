@@ -29,7 +29,11 @@ const PATTERN_SVG = {
   none: '',
 };
 
-export function createBoard(svgEl, game) {
+export function createBoard(svgEl, game, opts = {}) {
+  const interactive = opts.interactive !== false;
+  const ac = new AbortController();
+  const { signal } = ac;
+  let destroyed = false;
   const { puzzle } = game;
   const n = puzzle.n;
   const size = n * CELL;
@@ -81,6 +85,10 @@ export function createBoard(svgEl, game) {
   const borders = el('g', { fill: 'none', stroke: LINE, 'stroke-width': 6, 'stroke-linejoin': 'round', 'pointer-events': 'none' }, svgEl);
   colors.forEach((_, r) => el('path', { d: regionOutline(puzzle, r, CELL, 18) }, borders));
 
+  // Overlay über allem (Rahmen, Symbole); render() fasst es nie an
+  const overlay = el('g', { class: 'overlay', 'pointer-events': 'none' }, svgEl);
+  const cellCenter = (i) => ({ x: (i % n) * CELL + CELL / 2, y: Math.floor(i / n) * CELL + CELL / 2 });
+
   const SYMBOL = { dog: ['🐶', 1], mark: ['🐾', 1], auto: ['🐾', 0.4], empty: ['', 1] };
   function render() {
     const bad = game.conflicts();
@@ -128,39 +136,51 @@ export function createBoard(svgEl, game) {
   const boardSize = () => svgEl.getBoundingClientRect().width;
   const reset = () => { pid = null; points = []; swiping = false; done = 0; };
 
-  svgEl.addEventListener('pointerdown', (e) => {
-    if (pid !== null) return;
-    e.preventDefault();
-    pid = e.pointerId;
-    points = [local(e)];
-    try { svgEl.setPointerCapture(pid); } catch { /* Pointer schon weg */ }
-  });
-  svgEl.addEventListener('pointermove', (e) => {
-    if (e.pointerId !== pid) return;
-    points.push(local(e));
-    const g = classifyGesture(points, n, boardSize());
-    if (g.kind !== 'swipe') return;
-    if (!swiping) { swiping = true; game.beginSwipe(); }
-    for (; done < g.cells.length; done++) game.swipeOver(g.cells[done]);
-  });
-  svgEl.addEventListener('pointerup', (e) => {
-    if (e.pointerId !== pid) return;
-    points.push(local(e));
-    if (swiping) game.endSwipe();
-    else {
+  if (interactive) {
+    svgEl.addEventListener('pointerdown', (e) => {
+      if (pid !== null) return;
+      e.preventDefault();
+      pid = e.pointerId;
+      points = [local(e)];
+      try { svgEl.setPointerCapture(pid); } catch { /* Pointer schon weg */ }
+    }, { signal });
+    svgEl.addEventListener('pointermove', (e) => {
+      if (e.pointerId !== pid) return;
+      points.push(local(e));
       const g = classifyGesture(points, n, boardSize());
-      if (g.kind === 'tap' && g.cell >= 0) game.tap(g.cell);
-    }
-    reset();
-  });
-  svgEl.addEventListener('pointercancel', (e) => {
-    if (e.pointerId !== pid) return;
-    if (swiping) game.endSwipe();
-    reset();
-  });
-  svgEl.addEventListener('contextmenu', (e) => e.preventDefault());
+      if (g.kind !== 'swipe') return;
+      if (!swiping) { swiping = true; game.beginSwipe(); }
+      for (; done < g.cells.length; done++) game.swipeOver(g.cells[done]);
+    }, { signal });
+    svgEl.addEventListener('pointerup', (e) => {
+      if (e.pointerId !== pid) return;
+      points.push(local(e));
+      if (swiping) game.endSwipe();
+      else {
+        const g = classifyGesture(points, n, boardSize());
+        if (g.kind === 'tap' && g.cell >= 0) game.tap(g.cell);
+      }
+      reset();
+    }, { signal });
+    svgEl.addEventListener('pointercancel', (e) => {
+      if (e.pointerId !== pid) return;
+      if (swiping) game.endSwipe();
+      reset();
+    }, { signal });
 
-  game.onChange(render);
+    svgEl.addEventListener('contextmenu', (e) => e.preventDefault(), { signal });
+  }
+
+  function destroy() {
+    destroyed = true;
+    ac.abort();
+    clearTimeout(celebrateTimer);
+    svgEl.classList.remove('celebrate', 'board');
+    svgEl.replaceChildren();
+    svgEl.removeAttribute('viewBox');
+  }
+
+  game.onChange(() => { if (!destroyed) render(); });
   render();
-  return { render, wiggle, pulse, celebrate };
+  return { render, wiggle, pulse, celebrate, destroy, cellCenter, overlay };
 }
