@@ -35,7 +35,7 @@ const cmpDiff = (a, b) => {
   return 0;
 };
 
-const defaultSettings = { sound: true, autoMark: true };
+const defaultSettings = { sound: true, autoMark: false };
 const baseSave = (over = {}) => ({
   version: 1,
   section: 0,
@@ -43,6 +43,7 @@ const baseSave = (over = {}) => ({
   totalSolved: 0,
   current: null,
   settings: { ...defaultSettings },
+  settingsRev: 2,
   ...over,
 });
 
@@ -165,7 +166,7 @@ test('load: getItem wirft → kein Throw, Standard-Save', () => {
 test('load: fehlende settings-Schlüssel werden mit Standard gefüllt', () => {
   const s = memStorage();
   s.setItem(KEY, JSON.stringify(baseSave({ settings: { sound: false } })));
-  assert.deepEqual(load(s).settings, { sound: false, autoMark: true });
+  assert.deepEqual(load(s).settings, { sound: false, autoMark: false });
 });
 
 test('store/load: current bleibt erhalten, auch wenn pools später andere Rätsel enthalten', () => {
@@ -259,4 +260,22 @@ test('pickPuzzle: Index über count wird auf count-1 geklemmt, kein Throw', () =
   assert.doesNotThrow(() => pickPuzzle(pools, 1, 99));
   assert.deepEqual(pickPuzzle(pools, 1, 99), pickPuzzle(pools, 1, 4));
   assert.deepEqual(pickPuzzle(pools, 0, 99), pickPuzzle(pools, 0, 2));
+});
+
+test('load: alter Save ohne settingsRev bekommt Auto-Pfoten aus, Rest bleibt', () => {
+  const s = memStorage();
+  const old = baseSave({ section: 3, index: 2, totalSolved: 9, settings: { sound: false, autoMark: true } });
+  delete old.settingsRev;
+  s.setItem(KEY, JSON.stringify(old));
+  const got = load(s);
+  assert.deepEqual(got.settings, { sound: false, autoMark: false });
+  assert.equal(got.settingsRev, 2);
+  assert.equal(got.section, 3);
+  assert.equal(got.totalSolved, 9);
+});
+
+test('load: mit settingsRev 2 bleibt eine bewusste Wahl Auto-Pfoten an erhalten', () => {
+  const s = memStorage();
+  s.setItem(KEY, JSON.stringify(baseSave({ settings: { sound: true, autoMark: true } })));
+  assert.equal(load(s).settings.autoMark, true);
 });

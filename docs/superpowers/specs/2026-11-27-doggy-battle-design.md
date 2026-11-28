@@ -143,7 +143,7 @@ icons/
 - **Wischen** über mehrere Felder setzt 🐾 auf alle überstrichenen leeren Felder (spart Tippen).
 - **↩️ Rückgängig:** unbegrenzt innerhalb des aktuellen Rätsels; nimmt eine ganze Aktion zurück
   (inkl. der dabei automatisch gesetzten 🐾).
-- **Auto-🐾** (Standard: an, umschaltbar im Elternmenü): Setzt er einen Doggy, erscheinen auf
+- **Auto-🐾** (Standard: aus, weil das Spiel damit zu einfach war; umschaltbar im Elternmenü): Setzt er einen Doggy, erscheinen auf
   den 8 Nachbarfeldern sowie der restlichen Zeile, Spalte und dem restlichen Bereich blasse 🐾.
   Auto-🐾 sind intern als «automatisch» markiert und verschwinden wieder, wenn der Doggy entfernt
   wird, sofern kein anderer Doggy sie ebenfalls verursacht. Von Hand gesetzte 🐾 bleiben immer.
