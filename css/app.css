@@ -67,7 +67,7 @@ body { font-family: system-ui, -apple-system, "Segoe UI", sans-serif; }
   padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
 }
 #start { align-items: center; justify-content: space-evenly; min-height: 0; }
-.logo { font-size: 72px; line-height: 1; font-family: "Apple Color Emoji", "Noto Color Emoji", sans-serif; }
+.startbar { display: flex; gap: 32px; justify-content: center; }
 .btn { font-family: "Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji", sans-serif; }
 .btn.big { width: 140px; height: 140px; font-size: 72px; box-shadow: 0 6px 0 rgba(74, 74, 74, 0.25); }
 #start svg.board.preview { --side: min(40vw, 30vh); width: var(--side); height: var(--side); margin: 0; pointer-events: none; }
@@ -88,6 +88,20 @@ svg.board.locked { pointer-events: none; }
 }
 .next:active { transform: translateX(-50%) scale(0.94); }
 @keyframes pop { from { opacity: 0; transform: translateX(-50%) scale(0.6); } }
+
+/* Halten: Knopf füllt sich, solange der Finger drauf bleibt */
+.btn.hold { touch-action: none; -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; }
+.btn.hold.holding { animation: hold-fill var(--hold-ms, 3000ms) linear forwards; }
+@keyframes hold-fill { from { box-shadow: inset 0 0 0 0 #fdeeae; } to { box-shadow: inset 0 0 0 32px #fdeeae; } }
+
+/* Rückfrage «ganz von vorne» */
+dialog.ask {
+  border: 3px solid var(--ink); border-radius: 32px; background: var(--bg); color: var(--ink); padding: 32px;
+}
+dialog.ask::backdrop { background: rgba(74, 74, 74, 0.45); }
+.ask-q { font-size: 96px; line-height: 1; text-align: center; margin-bottom: 24px;
+  font-family: "Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji", sans-serif; }
+.ask-row { display: flex; gap: 32px; justify-content: center; }
 
 /* Elternmenü */
 dialog.menu {

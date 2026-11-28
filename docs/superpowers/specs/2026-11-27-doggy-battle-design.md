@@ -102,6 +102,8 @@ icons/
 
 - **Kein Menü, keine Levelauswahl.** Startbildschirm = grosser ▶️-Knopf, darunter das
   aktuelle Gitter als kleines Vorschaubild. Ein Tipp führt direkt ins laufende Rätsel.
+  Unten zwei kleine Knöpfe: 🏠 (3 s halten = Elternmenü) und 🔄 (ganz von vorne, zurück zur
+  Übung; erst nach Rückfrage mit ✅ / ❌, Einstellungen bleiben).
 - Nach dem Lösen: Freude-Animation (Doggys hüpfen, Konfetti in weichen Farben), Bellen, dann
   ein grosser ▶️-Knopf für das nächste Rätsel (kein automatischer Wechsel, damit er das gelöste
   Brett anschauen kann).
@@ -150,7 +152,8 @@ icons/
   Tippt er auf ein Auto-🐾, verhält es sich wie ein normales 🐾 (nächster Schritt 🐶).
 - **Felder** mindestens 44 pt, Gitter füllt die verfügbare Fläche quadratisch aus; kein Zoom,
   kein Scrollen, Doppeltipp-Zoom und Text-Auswahl unterdrückt.
-- 🏠 führt zum Startbildschirm. Ein **langer Druck (3 s) auf 🏠** öffnet das Elternmenü.
+- 🏠 führt zum Startbildschirm. Ein **langer Druck (3 s) auf 🏠** öffnet das Elternmenü; beim
+  Halten füllt sich der Knopf sichtbar.
 
 ## 8. Regeln lernen ohne Text (Übung)
 

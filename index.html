@@ -14,13 +14,16 @@
 </head>
 <body>
 <main id="start" class="screen" hidden>
-  <div class="logo" aria-hidden="true">🏠</div>
   <button id="play" class="btn big" aria-label="Spielen">▶️</button>
   <svg id="preview" class="preview"></svg>
+  <div class="startbar">
+    <button id="start-home" class="btn hold" aria-label="Elternmenü (3 Sekunden halten)">🏠</button>
+    <button id="restart" class="btn" aria-label="Ganz von vorne">🔄</button>
+  </div>
 </main>
 <main id="game" class="screen" hidden>
   <div class="topbar">
-    <button id="home" class="btn" aria-label="Start">🏠</button>
+    <button id="home" class="btn hold" aria-label="Start">🏠</button>
     <div id="dots" class="dots" aria-hidden="true"></div>
     <div class="actions">
       <button id="undo" class="btn" aria-label="Rückgängig">↩️</button>
