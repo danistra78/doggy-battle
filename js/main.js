@@ -7,6 +7,7 @@ import { restoreGame } from './restore.js';
 import { initSound, bark } from './sound.js';
 import { openMenu } from './menu.js';
 import { startTutorial } from './tutorial.js';
+import { onHold } from './hold.js';
 
 const $ = (id) => document.getElementById(id);
 const LONG_PRESS_MS = 3000;
@@ -141,21 +142,46 @@ function startPlaying() {
   if (!stopTutorial) maybeTutorial();
 }
 
-// Kurzer Druck auf 🏠 = Startbildschirm, 3 s = Elternmenü
+// 🏠 im Spiel: kurzer Druck = Startbildschirm, 3 s = Elternmenü; 🏠 unten am Start: 3 s = Elternmenü
 function setupHome() {
-  const home = $('home');
-  let timer = 0, long = false;
-  home.addEventListener('pointerdown', () => {
-    long = false;
-    clearTimeout(timer);
-    timer = setTimeout(() => { long = true; openParentMenu(); }, LONG_PRESS_MS);
+  onHold($('home'), { ms: LONG_PRESS_MS, onTap: showStart, onLong: openParentMenu });
+  onHold($('start-home'), { ms: LONG_PRESS_MS, onLong: openParentMenu });
+}
+
+// 🔄 am Start: ganz von vorne (zurück zur Übung), nur nach ✅; Einstellungen bleiben
+function setupRestart() {
+  $('restart').addEventListener('click', () => {
+    confirmRestart(() => {
+      save = { ...reset(), settings: save.settings };
+      buildGame();
+      showStart();
+    });
   });
-  const cancel = () => clearTimeout(timer);
-  home.addEventListener('pointerup', () => { cancel(); if (!long) showStart(); });
-  home.addEventListener('pointercancel', cancel);
-  home.addEventListener('pointerleave', cancel);
-  home.addEventListener('contextmenu', (e) => e.preventDefault());
-  home.addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === ' ') showStart(); });
+}
+
+function confirmRestart(onYes) {
+  const dlg = document.createElement('dialog');
+  dlg.className = 'ask';
+  const q = document.createElement('div');
+  q.className = 'ask-q';
+  q.textContent = '🔄';
+  q.setAttribute('aria-label', 'Ganz von vorne anfangen?');
+  const row = document.createElement('div');
+  row.className = 'ask-row';
+  const mk = (label, aria, fn) => {
+    const b = document.createElement('button');
+    b.type = 'button';
+    b.className = 'btn big';
+    b.textContent = label;
+    b.setAttribute('aria-label', aria);
+    b.addEventListener('click', () => { dlg.close(); fn?.(); });
+    return b;
+  };
+  row.append(mk('✅', 'Ja, von vorne', onYes), mk('❌', 'Nein'));
+  dlg.append(q, row);
+  dlg.addEventListener('close', () => dlg.remove());
+  document.body.append(dlg);
+  dlg.showModal();
 }
 
 function openParentMenu() {
@@ -194,6 +220,7 @@ async function init() {
     await loadPools();
     buildGame();
     setupHome();
+    setupRestart();
     $('play').addEventListener('click', startPlaying);
     $('next').addEventListener('click', () => {
       try { buildGame(); } catch (e) { showFailure(e); }
