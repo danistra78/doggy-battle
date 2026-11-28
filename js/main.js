@@ -192,6 +192,7 @@ function openParentMenu() {
       save = { ...save, settings: { ...save.settings, [key]: value } };
       if (key === 'autoMark') { game.autoMark = value; board.render(); }
       store(localStorage, save);
+      if (key === 'sound' && value) bark('happy'); // Probeton beim Einschalten
     },
     repeatTutorial() { apply({ ...save, section: 0, index: 0, current: null }); rebuild(); },
     stepBack() { if (save.section === 0) return; apply(stepBack(save)); rebuild(); },
