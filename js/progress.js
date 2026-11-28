@@ -13,7 +13,9 @@ export const CURVE = [
 
 const KEY = 'doggyBattle.v1';
 const VERSION = 1;
-const DEFAULT_SETTINGS = { sound: true, autoMark: true };
+const DEFAULT_SETTINGS = { sound: true, autoMark: false };
+// Stand der Einstellungs-Standards; ältere Saves bekommen einmalig die neuen Standards
+const SETTINGS_REV = 2;
 
 // Standard-Save: frisch bei jedem Aufruf, damit nichts geteilt wird
 function defaultSave() {
@@ -24,6 +26,7 @@ function defaultSave() {
     totalSolved: 0,
     current: null,
     settings: { ...DEFAULT_SETTINGS },
+    settingsRev: SETTINGS_REV,
   };
 }
 
@@ -98,10 +101,14 @@ export function load(storage) {
 
   const base = defaultSave();
   const settings = data.settings && typeof data.settings === 'object' ? data.settings : {};
+  const merged = { ...DEFAULT_SETTINGS, ...settings };
+  // Rev 2: Auto-Pfoten standardmässig aus (Spiel war damit zu einfach)
+  if (data.settingsRev !== SETTINGS_REV) merged.autoMark = false;
   return {
     ...base,
     ...data,
-    settings: { ...DEFAULT_SETTINGS, ...settings },
+    settings: merged,
+    settingsRev: SETTINGS_REV,
   };
 }
 

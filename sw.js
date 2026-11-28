@@ -1,4 +1,4 @@
-const CACHE = 'doggy-v3';
+const CACHE = 'doggy-v4';
 const FILES = [
   './',
   './index.html',
