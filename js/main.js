@@ -4,7 +4,7 @@ import { createBoard } from './board.js';
 import { hint } from './solver.js';
 import { CURVE, advance, stepBack, load, store, reset } from './progress.js';
 import { restoreGame } from './restore.js';
-import { initSound, bark } from './sound.js';
+import { initSound, bark, testSound } from './sound.js';
 import { openMenu } from './menu.js';
 import { startTutorial } from './tutorial.js';
 import { onHold } from './hold.js';
@@ -197,6 +197,7 @@ function openParentMenu() {
     repeatTutorial() { apply({ ...save, section: 0, index: 0, current: null }); rebuild(); },
     stepBack() { if (save.section === 0) return; apply(stepBack(save)); rebuild(); },
     resetAll() { apply(reset()); rebuild(); },
+    testSound,
   });
 }
 

@@ -1,4 +1,5 @@
 // Elternmenü: <dialog> mit Text (Deutsch)
+import { APP_VERSION } from './version.js';
 const el = (tag, attrs = {}, ...kids) => {
   const e = document.createElement(tag);
   for (const [k, v] of Object.entries(attrs)) e[k] = v;
@@ -6,7 +7,7 @@ const el = (tag, attrs = {}, ...kids) => {
   return e;
 };
 
-// actions: { toggle(key), repeatTutorial(), stepBack(), resetAll() }; getSave() liefert den aktuellen Save
+// actions: { toggle(key), repeatTutorial(), stepBack(), resetAll(), testSound() }; getSave() liefert den aktuellen Save
 export function openMenu(getSave, actions) {
   const dlg = el('dialog', { className: 'menu' });
   const body = el('div', { className: 'menu-body' });
@@ -32,12 +33,14 @@ export function openMenu(getSave, actions) {
 
   body.append(
     check('sound', 'Ton'),
+    btn('Ton testen 🔊', () => actions.testSound()),
     check('autoMark', 'Automatische Pfoten'),
     btn('Übung wiederholen', () => { actions.repeatTutorial(); close(); }),
     btn('Eine Grösse zurück', () => { actions.stepBack(); close(); }),
     btn('Fortschritt zurücksetzen', () => { confirmBox.hidden = false; }),
     confirmBox,
     el('p', { className: 'menu-count' }, `Gelöste Rätsel: ${getSave().totalSolved}`),
+    el('p', { className: 'menu-count' }, `Version ${APP_VERSION}`),
     btn('Schliessen', close),
   );
 

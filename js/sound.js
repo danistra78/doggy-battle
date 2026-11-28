@@ -1,8 +1,16 @@
-// Bellen und Knurren per Web Audio (gefilterte Rauschbursts)
-let ctx = null, master = null;
-let enabled = () => true;
+// Bellen und Knurren: einmal per Web Audio offline berechnet, als WAV über <audio> abgespielt.
+// <audio> statt Live-Web-Audio, weil iOS Web Audio beim Stummschalter und ohne
+// Freischaltung im selben Tipp oft stumm lässt; <audio> spielt als Medienwiedergabe.
+import { encodeWav } from './wav.js';
 
-// Laut genug für iPad-Lautsprecher: Kompressor + Aufholverstärkung vor dem Ausgang
+const RATE = 44100;
+const LENGTH_S = 0.7;
+let enabled = () => true;
+const clips = {}; // kind -> HTMLAudioElement
+const playing = new WeakSet();
+let unlocked = false;
+
+// Kompressor + Aufholverstärkung, damit es aus kleinen Lautsprechern laut genug klingt
 export function chain(c) {
   const comp = c.createDynamicsCompressor();
   comp.threshold.value = -30;
@@ -14,24 +22,6 @@ export function chain(c) {
   gain.gain.value = 2.5;
   comp.connect(gain).connect(c.destination);
   return comp;
-}
-
-function ensure() {
-  // iOS: Wiedergabe statt «Umgebung», sonst schaltet der Stummschalter Web Audio ab
-  try { if (navigator.audioSession && navigator.audioSession.type !== 'playback') navigator.audioSession.type = 'playback'; } catch {}
-  const AC = window.AudioContext || window.webkitAudioContext;
-  if (!ctx && AC) {
-    try { ctx = new AC(); master = chain(ctx); } catch { ctx = null; master = null; }
-  }
-  if (ctx && ctx.state !== 'running') ctx.resume?.().catch?.(() => {});
-  return ctx;
-}
-
-// Safari zählt pointerdown nicht als Nutzeraktion: erst bei pointerup/click/touchend erzeugen
-export function initSound(isEnabled) {
-  enabled = isEnabled;
-  for (const type of ['pointerup', 'click', 'touchend']) document.addEventListener(type, ensure, { passive: true });
-  document.addEventListener('visibilitychange', () => { if (!document.hidden && ctx) ensure(); });
 }
 
 let noise = null;
@@ -61,7 +51,7 @@ function burst(c, out, t, dur, f0, f1, q, vol) {
   src.start(t, Math.random() * 0.5, dur + 0.05);
 }
 
-// Klang auf out ab Zeit t planen (auch für Offline-Messung nutzbar)
+// Klang auf out ab Zeit t planen
 export function schedule(c, out, kind, t) {
   if (kind === 'happy') {
     burst(c, out, t, 0.14, 500, 1100, 4, 1);
@@ -73,9 +63,57 @@ export function schedule(c, out, kind, t) {
   }
 }
 
+// Offline rendern (braucht keinen Tipp); ältere Safari-Versionen melden über oncomplete
+async function render(kind) {
+  const OAC = window.OfflineAudioContext || window.webkitOfflineAudioContext;
+  const c = new OAC(1, Math.round(RATE * LENGTH_S), RATE);
+  schedule(c, chain(c), kind, 0.01);
+  const done = new Promise((resolve) => { c.oncomplete = (e) => resolve(e.renderedBuffer); });
+  const p = c.startRendering();
+  const buf = (p && typeof p.then === 'function') ? await p : await done;
+  const url = URL.createObjectURL(new Blob([encodeWav(buf.getChannelData(0), RATE)], { type: 'audio/wav' }));
+  const a = new Audio(url);
+  a.preload = 'auto';
+  a.addEventListener('ended', () => playing.delete(a));
+  return a;
+}
+
+// iOS gibt ein <audio> erst frei, wenn es einmal in einem Tipp gestartet wurde: stumm starten und anhalten
+function unlock() {
+  if (unlocked || !clips.happy) return;
+  unlocked = true;
+  for (const a of Object.values(clips)) {
+    if (playing.has(a)) continue;
+    a.muted = true;
+    Promise.resolve(a.play()).then(() => {
+      if (!playing.has(a)) { a.pause(); a.currentTime = 0; }
+      a.muted = false;
+    }).catch(() => { a.muted = false; unlocked = false; });
+  }
+}
+
+export function initSound(isEnabled) {
+  enabled = isEnabled;
+  Promise.all(['happy', 'grumble'].map(async (k) => { clips[k] = await render(k); }))
+    .catch((e) => console.warn('Ton:', e));
+  for (const type of ['touchend', 'click', 'keydown']) document.addEventListener(type, unlock, { passive: true, capture: true });
+}
+
+function play(kind) {
+  const a = clips[kind];
+  if (!a) return;
+  playing.add(a);
+  a.muted = false;
+  try { a.currentTime = 0; } catch {}
+  Promise.resolve(a.play()).catch((e) => { playing.delete(a); console.warn('Ton:', e); });
+}
+
 export function bark(kind) {
-  if (!enabled()) return;
-  const c = ensure();
-  if (!c || c.state === 'closed') return;
-  schedule(c, master, kind, c.currentTime + 0.01);
+  if (enabled()) play(kind);
+}
+
+// Elternmenü: spielt immer, auch wenn «Ton» aus ist
+export function testSound() {
+  unlock();
+  play('happy');
 }
