@@ -1,4 +1,4 @@
-const CACHE = 'doggy-v6';
+const CACHE = 'doggy-v7';
 const FILES = [
   './',
   './index.html',
@@ -18,6 +18,8 @@ const FILES = [
   './js/sound.js',
   './js/state.js',
   './js/tutorial.js',
+  './js/version.js',
+  './js/wav.js',
   './puzzles/10.json',
   './puzzles/5.json',
   './puzzles/6.json',
